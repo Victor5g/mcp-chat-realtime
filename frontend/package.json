@@ -1,0 +1,31 @@
+{
+  "name": "mcp-chat-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "framer-motion": "^12.23.13",
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.16",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "24.4.0",
+    "@types/react": "19.1.13",
+    "autoprefixer": "10.4.20",
+    "jsdom": "^25.0.0",
+    "postcss": "8.4.41",
+    "tailwindcss": "3.4.10",
+    "typescript": "5.6.2",
+    "vitest": "^2.1.1"
+  }
+}

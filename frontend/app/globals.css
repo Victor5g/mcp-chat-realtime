@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+:root {
+  height: 100%;
+}
+
+@layer base {
+  :root {
+    --color-surface-rgb: 17 25 40;
+    --color-surface-strong-rgb: 12 18 31;
+    --color-bg-gradient: radial-gradient(circle at 8% 12%, #020617 0%, #030712 40%, #0f172a 100%);
+    color-scheme: dark;
+  }
+
+  [data-theme='light'] {
+    --color-surface-rgb: 255 255 255;
+    --color-surface-strong-rgb: 248 250 252;
+    --color-bg-gradient: radial-gradient(circle at 20% 20%, #e0f2fe 0%, #c7d2fe 45%, #f8fafc 100%);
+    color-scheme: light;
+  }
+
+  body {
+    @apply min-h-full font-sans antialiased transition-colors duration-300 ease-out;
+    background: var(--color-bg-gradient);
+    color: rgb(226 232 240);
+  }
+
+  [data-theme='light'] body,
+  body.light {
+    color: rgb(30 41 59);
+  }
+
+  ::selection {
+    background-color: rgba(56, 189, 248, 0.55);
+    color: rgb(15 23 42);
+  }
+
+  [data-theme='light'] ::selection,
+  body.light ::selection {
+    background-color: rgba(56, 189, 248, 0.35);
+    color: rgb(15 23 42);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
