@@ -77,19 +77,28 @@ export class Process_client_event_usecase {
     }
     const detailStr = toStringDetail(detail)
     const haystack = `${errorMessage ?? ''} ${detailStr ?? ''}`.toLowerCase()
+
+    // Traduções amigáveis em PT-BR; quando houver tradução, não enviamos o detalhe
     if (haystack.includes('credit balance is too low')) {
-      return { message: 'ai_saldo_insuficiente', detail: errorMessage || detailStr }
+      return { message: 'Saldo insuficiente para usar a API da Anthropic. Acesse o plano e adquira créditos.' }
     }
-    if (status === 401 || status === 403) {
-      return { message: 'ai_nao_autorizado', detail: errorMessage || detailStr }
+    if (status === 401 || status === 403 || haystack.includes('invalid api key') || haystack.includes('unauthorized')) {
+      return { message: 'Não autorizado. Verifique sua ANTHROPIC_API_KEY.' }
     }
-    if (status === 429) {
-      return { message: 'ai_limite_excedido', detail: errorMessage || detailStr }
+    if (status === 429 || haystack.includes('rate limit') || haystack.includes('too many requests')) {
+      return { message: 'Limite de uso excedido. Aguarde e tente novamente.' }
     }
     if (typeof status === 'number' && status >= 500) {
-      return { message: 'ai_indisponivel', detail: errorMessage || detailStr }
+      return { message: 'Serviço da IA indisponível no momento. Tente novamente mais tarde.' }
     }
-    return { message: 'ai_error', detail: errorMessage || detailStr }
+
+    // Sem tradução específica: mostre a mensagem original, se houver; sem detalhe
+    if (errorMessage || detailStr) {
+      return { message: (errorMessage || detailStr) as string }
+    }
+
+    // Fallback genérico
+    return { message: 'Erro da IA' }
   }
 
   async handle_event(event: ClientEvent) {

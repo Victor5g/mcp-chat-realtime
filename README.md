@@ -1,100 +1,192 @@
-# Chat Streaming Real-Time com Claude 3.7+, Aprovação e Execução de Tool MCP em Streaming
+# 🚀 Chat em Tempo Real com Claude 3.7+ e Tool MCP (Streaming + Aprovação)
 
-## Visão Geral
+## 🧭 Visão Geral
 
-Desenvolva uma aplicação fullstack de **chat em tempo real**, utilizando **Next.js** e **Tailwind CSS** no frontend, com backend WebSocket para orquestração da comunicação.
+Aplicação fullstack de chat em tempo real com **Next.js + Tailwind CSS** no frontend e **NestJS (WebSocket Gateway) + ws** no backend. A IA (**Claude 3.7+**) responde em streaming (SSE) e pode solicitar execução de uma **tool MCP** que cria arquivos em chunks mediante **aprovação explícita** do usuário.
 
-A inteligência artificial deve ser integrada via **Anthropic API** ou **AWS Bedrock** utilizando exclusivamente o modelo **Claude 3.7+ (ex: Sonnet 3.7+)**, sem utilização de mocks.
+## ✅ Pré-requisitos
+- Node.js >= 18.17 (requer `fetch` nativo)
+- npm (ou outro gerenciador compatível)
 
-A particularidade do desafio é que a IA poderá solicitar o uso de uma **tool MCP** (ferramenta externa para criação/processamento), cuja execução depende de aprovação explícita do usuário e será feita em modo **streaming via chunks**, com o conteúdo do arquivo sendo escrito e exibido em tempo real durante o streaming.
+## ✨ Funcionalidades
+- 🗨️ Chat com histórico e respostas em tempo real
+- 🔌 WebSocket full-duplex entre frontend e backend
+- 🤖 Integração real com Anthropic Claude 3.7+ (streaming SSE)
+- 🧰 Tool MCP para criação de arquivos em chunks
+- 🔐 Aprovação explícita do usuário para execução de tools
+- 📡 Exibição de chunks em tempo real durante a execução da tool
+- 🟢 Indicadores: “IA digitando...” e “Arquivo sendo criado...”
 
-## Descrição do Fluxo Completo
+## 🏗️ Arquitetura
+- Frontend: `Next.js 14 + Tailwind`
+- Backend: `NestJS (WebSocket) + ws + TypeScript`
+- IA: `Anthropic Messages API` com `tools` e `stream` habilitados
+- Tool MCP: criação de arquivo incremental em `WORKSPACE_DIR`
 
-### 1. Interação Inicial do Usuário
-- O usuário envia uma mensagem no chat solicitando uma ação, por exemplo: criação de um arquivo com conteúdo específico.
+## 📂 Estrutura
 
-### 2. Envio da Mensagem ao Backend
-- O frontend envia a mensagem ao backend via WebSocket.
-- O backend repassa essa mensagem para o Claude 3.7+ (Anthropic ou Bedrock) via API, utilizando a interface de **tool use** para a possível execução da tool MCP.
+```
+backend/
+  src/
+    app.module.ts
+    env.ts
+    logger.ts
+    main.ts
+    metrics.ts
+    utils.ts
+    http/
+      health.controller.ts
+      metrics.controller.ts
+    modules/chat/
+      chat.module.ts
+      domain/
+        chat_session.ts
+        schemas.ts
+        types.ts
+      gateways/
+        chat.gateway.ts
+      services/
+        anthropic_service.ts
+        mcp_tool_service.ts
+      usecases/
+        process_client_event.usecase.ts
+  package.json
+  tsconfig.json
+  .env.example
+  .gitignore
 
-### 3. Fluxo de Solicitação de Execução da Tool MCP pela IA
-- Se a IA *decidir* que precisa executar a tool MCP para atender ao pedido, ela envia uma mensagem solicitando a execução da ferramenta.
-- O backend captura essa solicitação e imediatamente envia um evento via WebSocket para o frontend, informando que a IA está pedindo autorização para executar a tool MCP (ex: criar e popular um arquivo).
+frontend/
+  app/
+    globals.css
+    layout.tsx
+    page.tsx
+  components/
+    approval_modal.tsx
+    message_bubble.tsx
+    status_badge.tsx
+    tool_output_view.tsx
+  lib/ws_events.ts
+  package.json
+  next.config.js
+  tailwind.config.js
+  postcss.config.js
+  tsconfig.json
+  .gitignore
+```
 
-### 4. Aprovação/Renegação do Usuário
-- O frontend exibe uma interface clara (popup/modal ou similar), notificando o usuário da solicitação da IA para executar a ferramenta MCP.
-- O usuário pode escolher **aprovar** ou **negar** a execução.
-- A decisão do usuário é enviada de volta ao backend via WebSocket.
+Observação: o backend usa um WebSocket Gateway do NestJS e valida todos os payloads com Zod.
 
-### 5. Após Aprovação: Execução da Tool MCP em Streaming
-- Se o usuário **aprovar** a execução:
-  - O backend invoca a tool MCP para iniciar a criação/população do arquivo.
-  - A tool MCP gera o conteúdo do arquivo **progressivamente**, via **chunks**, enviando os dados parcial e sequencialmente conforme a criação avança.
-  - O backend recebe esses chunks e os transmite em tempo real ao frontend via WebSocket, sem buffering ou agrupamento.
+## 🔑 Variáveis de Ambiente
 
-### 6. Exibição em Tempo Real no Frontend
-- O frontend recebe cada chunk pelo socket e imediatamente atualiza a interface, exibindo o conteúdo do arquivo sendo escrito **em tempo real**, chunk a chunk.
-- Pode-se mostrar mensagens auxiliares no chat, como “Arquivo sendo criado...”, “Chunk X recebido”, entre outras, para que o usuário tenha feedback claro do progresso.
-- Ao final do envio, o frontend informa que o arquivo foi criado e está concluído.
+- Backend
+  - `ANTHROPIC_API_KEY` (obrigatória)
+  - `ANTHROPIC_MODEL` (opcional, padrão `claude-3-7-sonnet-2025-02-19`)
+  - `PORT` (opcional, padrão `4000`)
+  - `WS_ALLOWED_ORIGINS` (opcional, padrão `*`)
+  - `WORKSPACE_DIR` (opcional, padrão `workspace`)
 
-### 7. Caso o Usuário Negue a Execução
-- O backend comunica para a IA que a execução da tool foi negada.
-- A IA responde adequadamente ao usuário via chat, explicando a negativa ou propondo alternativas.
+- Frontend
+  - `NEXT_PUBLIC_WS_URL` (opcional, padrão `ws://localhost:4000`)
 
-### 8. Fluxo Contínuo
-- O chat permanece ativo para o usuário continuar enviando novas mensagens.
-- Toda vez que a IA solicitar uso da tool MCP, o fluxo de aprovação e execução em streaming será repetido.
+## ▶️ Como Rodar
 
-## Requisitos Técnicos
+1) Backend
 
-### Frontend (Next.js + Tailwind CSS)
-- Página única com interface de chat responsiva.
-- Campo de input e exibição do histórico da conversa.
-- Comunicação via WebSocket para envio das mensagens e recebimento das respostas parciais/finais.
-- Interface clara para notificações de solicitação de execução da tool MCP.
-- Capacidade de aprovar ou negar a execução da tool.
-- Renderização em tempo real das mensagens da IA e do conteúdo dos arquivos gerados pelo streaming chunked da tool MCP.
-- Indicadores visuais de carregamento / streaming (exemplo: “typing...” ou barras de progresso).
+Crie o arquivo `.env` (baseado em `.env.example`) e defina sua chave:
 
-### Backend
-- Server WebSocket para gerenciar conexões, receber mensagens e eventos, e enviar respostas parciais/finais.
-- Integração real com Claude 3.7+ através da Anthropic API ou AWS Bedrock:
-  - Uso da interface oficial de **tool use**.
-  - Streaming real da resposta da IA (respostas parciais enviadas assim que recebidas).
-- Controle e gerenciamento do fluxo de aprovação:
-  - Bloqueio da execução da tool até o backend receber a autorização explícita do frontend/usuário.
-- Chamada e execução da tool MCP em modo chunked, transmitindo cada chunk ao frontend via WebSocket em tempo real.
-- Comunicação transparente com o frontend sobre o progresso da execução da tool MCP (envio de chunks, estado de finalização, etc).
-- Não é permitido uso de mocks, todos os dados devem vir da integração real com a IA.
+```
+cd backend
+npm i
+cp .env.example .env
+# Edite .env e preencha ANTHROPIC_API_KEY
+npm run dev
+```
 
-## Critérios de Avaliação
+2) Frontend
 
-- **Integração real e funcional com Claude 3.7+** (Anthropic API ou AWS Bedrock), sem simulações.
-- **Fluxo claro e robusto de aprovação do usuário** para execução de ferramentas externas (tool MCP).
-- **Streaming chunked real-time** tanto no retorno das mensagens da IA quanto nos dados fragmentados enviados pela tool MCP.
-- **Orquestração eficiente via WebSocket** para permitir comunicação bidirecional instantânea.
-- **Organização e modularidade do código**, permitindo fácil manutenção e testes.
-- **Documentação clara no README**, incluindo:
-  - Como configurar as keys para Anthropic ou Bedrock.
-  - Como rodar o projeto.
-  - Descrição do fluxo de aprovação e streaming.
-- O foco está na experiência de chat generativo com controle do usuário para execução de ferramentas e streaming progressivo de respostas e dados.
+```
+cd frontend
+npm i
+NEXT_PUBLIC_WS_URL=ws://localhost:4000 npm run dev
+```
 
-## Pontos Chave do Desafio
+Abra: http://localhost:3000
 
-| Etapa                        | Detalhe                                         |
-|-----------------------------|------------------------------------------------|
-| Mensagem do usuário          | Enviada via WebSocket ao backend.               |
-| IA solicita ferramenta MCP   | Notificação em tempo real ao frontend.          |
-| Usuário aprova/nega          | Frontend envia decisão ao backend.               |
-| Execução MCP (aprovada)     | Conteúdo do arquivo gerado e enviado por chunks.|
-| Streaming ao usuário         | Frontend atualiza chat e conteúdo instante.      |
-| Negação de execução          | IA responde explicando recurso negado.           |
+Dicas de configuração:
+- Se quiser restringir origens WebSocket, ajuste `WS_ALLOWED_ORIGINS` (ex.: `http://localhost:3000`).
+- O diretório `WORKSPACE_DIR` (padrão `workspace`) é criado relativo ao diretório onde o backend é iniciado.
 
-## Referências Úteis
+## 🔁 Fluxo com Tool MCP
+1. Usuário envia mensagem no chat
+2. IA responde em streaming; se precisar da tool, envia `tool_use`
+3. Backend pausa e envia `tool_request` → frontend exibe modal
+4. Se aprovado ✅: tool cria arquivo chunk a chunk, emitindo `tool_chunk`
+5. Backend envia `tool_result` ao Claude e continua a resposta em streaming
+6. Se negado ❌: conversa segue sem executar a tool
 
-- [Anthropic API - Documentação Claude 3.7+](https://docs.anthropic.com/en/docs/get-started)
-- [AWS Bedrock - Integração Claude 3.7+](https://docs.anthropic.com/en/docs/claude-code/amazon-bedrock)
-- [Tool Use para Claude na Anthropic/AWS](https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages-tool-use.html)
+## 📡 Eventos WebSocket
+- Backend → Frontend
+  - `session_created { session_id }`
+  - `status_update { ai_typing?, tool_running?, file_path?, busy?, reconnecting?, error? }`
+  - `ai_chunk { text }`
+  - `assistant_message_completed { reason?: 'ok' | 'error' }`
+  - `tool_request { id, name, input }`
+  - `tool_chunk { chunk }`
+  - `error { message, detail? }`
 
- 
+- Frontend → Backend
+  - `user_message { text }`
+  - `tool_approval { tool_use_id, approved }`
+
+Todos os payloads trocados via WebSocket são validados com **Zod** no backend. Falhas retornam `error { message: 'invalid_payload' | 'invalid_json' }` e são registradas em log estruturado.
+
+## 🧪 Testes & Qualidade
+
+Rodar toda a suíte (backend + frontend):
+
+```
+cd backend && npm test
+cd ../frontend && npm test
+```
+
+Cobertura dos testes inclui:
+- Backend (Vitest): validação de payloads, aprovação negada/aprovada, erro da tool, auto-resposta para tool inválida.
+- Frontend (Vitest + RTL): interação do modal de aprovação e tratamento de mensagens de erro.
+
+## 🔍 Observabilidade
+- Logs estruturados (`logger.ts`) com nível (`info|warn|error`), carimbo ISO e contexto (ex.: `session_id`, `tool_use_id`).
+- Métricas em memória expostas em `GET /metrics` (formato Prometheus) — inclui contadores para conexões WebSocket, requisições Anthropic, aprovações de tool e durações médias de streaming/continuação.
+- Endpoint `GET /health` segue disponível.
+- Erros críticos propagados ao frontend com mensagens amigáveis e estado visual (badges/alertas) para reconexão, busy e falhas de tool.
+
+## 🧪 Requisitos e Garantias
+- ✅ Sem mocks: uso da API oficial Anthropic com SSE
+- ✅ Streaming real-time fim-a-fim (IA e MCP)
+- ✅ Código modular (services, utils, componentes)
+- ✅ Logs/estados do fluxo via `status_update`
+
+## 🧰 Exemplos úteis
+- Peça à IA: “Crie um arquivo `notas/hello.txt` com o conteúdo: Olá mundo”.
+  - O frontend exibirá um modal de aprovação com o input da tool.
+  - Ao aprovar, você verá `tool_chunk` com o conteúdo sendo gravado em partes.
+  - O arquivo será criado em `WORKSPACE_DIR/notas/hello.txt`.
+
+## 🛡️ Segurança & Restrições
+- A tool usa `safe_join` para prevenir path traversal; somente grava dentro de `WORKSPACE_DIR`.
+- `WS_ALLOWED_ORIGINS` controla quais origens podem conectar via WebSocket.
+
+## 🧯 Solução de Problemas
+- Mensagens de erro mapeadas do backend (exibidas no frontend):
+  - `ai_saldo_insuficiente`: crédito insuficiente na Anthropic.
+  - `ai_nao_autorizado`: verifique `ANTHROPIC_API_KEY`.
+  - `ai_limite_excedido`: rate limit; aguarde e tente novamente.
+  - `ai_indisponivel`: erro 5xx; tente novamente.
+  - `ai_error`: erro genérico; ver detalhes no log.
+- Erros da tool:
+  - `invalid_path`: caminho fora do `WORKSPACE_DIR`.
+  - `write_failed` / `tool_error`: verifique permissões e disco.
+
+## 📚 Referências
+- 📖 Anthropic: https://docs.anthropic.com/en/docs/get-started
+- ☁️ Bedrock: https://docs.anthropic.com/en/docs/claude-code/amazon-bedrock
+- 🧩 Tool Use: https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages-tool-use.html
