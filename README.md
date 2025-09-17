@@ -1,29 +1,29 @@
-# 🚀 Chat em Tempo Real com Claude 3.7+ e Tool MCP (Streaming + Aprovação)
+# 🚀 Real-Time Chat with Claude 3.7+ and MCP Tool (Streaming + Approval)
 
-## 🧭 Visão Geral
+## 🧭 Overview
 
-Aplicação fullstack de chat em tempo real com **Next.js + Tailwind CSS** no frontend e **NestJS (WebSocket Gateway) + ws** no backend. A IA (**Claude 3.7+**) responde em streaming (SSE) e pode solicitar execução de uma **tool MCP** que cria arquivos em chunks mediante **aprovação explícita** do usuário.
+Full‑stack real‑time chat app with **Next.js + Tailwind CSS** on the frontend and **NestJS (WebSocket Gateway) + ws** on the backend. The AI (**Claude 3.7+**) streams responses (SSE) and can request an **MCP tool** that writes files in chunks, pending explicit user approval.
 
-## ✅ Pré-requisitos
-- Node.js >= 18.17 (requer `fetch` nativo)
-- npm (ou outro gerenciador compatível)
+## ✅ Prerequisites
+- Node.js >= 18.17 (requires native `fetch`)
+- npm (or a compatible package manager)
 
-## ✨ Funcionalidades
-- 🗨️ Chat com histórico e respostas em tempo real
-- 🔌 WebSocket full-duplex entre frontend e backend
-- 🤖 Integração real com Anthropic Claude 3.7+ (streaming SSE)
-- 🧰 Tool MCP para criação de arquivos em chunks
-- 🔐 Aprovação explícita do usuário para execução de tools
-- 📡 Exibição de chunks em tempo real durante a execução da tool
-- 🟢 Indicadores: “IA digitando...” e “Arquivo sendo criado...”
+## ✨ Features
+- Live chat with message history and streaming replies
+- Full‑duplex WebSocket between frontend and backend
+- Real Anthropic Claude 3.7+ integration (SSE streaming)
+- MCP tool for chunked file creation
+- Explicit user approval before any tool runs
+- Real‑time display of tool chunks while the file is being written
+- Status badges: “AI typing…” and “File being created…”
 
-## 🏗️ Arquitetura
+## 🏗️ Architecture
 - Frontend: `Next.js 14 + Tailwind`
 - Backend: `NestJS (WebSocket) + ws + TypeScript`
-- IA: `Anthropic Messages API` com `tools` e `stream` habilitados
-- Tool MCP: criação de arquivo incremental em `WORKSPACE_DIR`
+- AI: `Anthropic Messages API` with `tools` and `stream` enabled
+- MCP Tool: incremental file creation inside `WORKSPACE_DIR`
 
-## 📂 Estrutura
+## 📂 Project Structure
 
 ```
 backend/
@@ -74,31 +74,35 @@ frontend/
   .gitignore
 ```
 
-Observação: o backend usa um WebSocket Gateway do NestJS e valida todos os payloads com Zod.
+Note: the backend uses a NestJS WebSocket Gateway and validates all payloads with Zod.
 
-## 🔑 Variáveis de Ambiente
+## 🖼️ Screenshot
+
+![Chat UI](docs/screenshots/chat-ui.png)
+
+## 🔑 Environment Variables
 
 - Backend
-  - `ANTHROPIC_API_KEY` (obrigatória)
-  - `ANTHROPIC_MODEL` (opcional, padrão `claude-3-7-sonnet-2025-02-19`)
-  - `PORT` (opcional, padrão `4000`)
-  - `WS_ALLOWED_ORIGINS` (opcional, padrão `*`)
-  - `WORKSPACE_DIR` (opcional, padrão `workspace`)
+  - `ANTHROPIC_API_KEY` (required)
+  - `ANTHROPIC_MODEL` (optional, default `claude-3-7-sonnet-2025-02-19`)
+  - `PORT` (optional, default `4000`)
+  - `WS_ALLOWED_ORIGINS` (optional, default `*`)
+  - `WORKSPACE_DIR` (optional, default `workspace`)
 
 - Frontend
-  - `NEXT_PUBLIC_WS_URL` (opcional, padrão `ws://localhost:4000`)
+  - `NEXT_PUBLIC_WS_URL` (optional, default `ws://localhost:4000`)
 
-## ▶️ Como Rodar
+## ▶️ Running Locally
 
 1) Backend
 
-Crie o arquivo `.env` (baseado em `.env.example`) e defina sua chave:
+Create your `.env` (based on `.env.example`) and set your API key:
 
 ```
 cd backend
 npm i
 cp .env.example .env
-# Edite .env e preencha ANTHROPIC_API_KEY
+# Edit .env and set ANTHROPIC_API_KEY
 npm run dev
 ```
 
@@ -110,21 +114,21 @@ npm i
 NEXT_PUBLIC_WS_URL=ws://localhost:4000 npm run dev
 ```
 
-Abra: http://localhost:3000
+Open: http://localhost:3000
 
-Dicas de configuração:
-- Se quiser restringir origens WebSocket, ajuste `WS_ALLOWED_ORIGINS` (ex.: `http://localhost:3000`).
-- O diretório `WORKSPACE_DIR` (padrão `workspace`) é criado relativo ao diretório onde o backend é iniciado.
+Tips:
+- To restrict WebSocket origins, set `WS_ALLOWED_ORIGINS` (e.g., `http://localhost:3000`).
+- `WORKSPACE_DIR` (default `workspace`) is created relative to where you start the backend.
 
-## 🔁 Fluxo com Tool MCP
-1. Usuário envia mensagem no chat
-2. IA responde em streaming; se precisar da tool, envia `tool_use`
-3. Backend pausa e envia `tool_request` → frontend exibe modal
-4. Se aprovado ✅: tool cria arquivo chunk a chunk, emitindo `tool_chunk`
-5. Backend envia `tool_result` ao Claude e continua a resposta em streaming
-6. Se negado ❌: conversa segue sem executar a tool
+## 🔁 MCP Tool Flow
+1. User sends a chat message
+2. AI streams the reply; if it needs the tool, it emits `tool_use`
+3. Backend pauses and sends `tool_request` → frontend shows an approval modal
+4. On approval ✅: tool writes the file chunk‑by‑chunk, emitting `tool_chunk`
+5. Backend sends `tool_result` back to Claude and continues the streamed reply
+6. On deny ❌: the conversation continues without running the tool
 
-## 📡 Eventos WebSocket
+## 📡 WebSocket Events
 - Backend → Frontend
   - `session_created { session_id }`
   - `status_update { ai_typing?, tool_running?, file_path?, busy?, reconnecting?, error? }`
@@ -138,55 +142,54 @@ Dicas de configuração:
   - `user_message { text }`
   - `tool_approval { tool_use_id, approved }`
 
-Todos os payloads trocados via WebSocket são validados com **Zod** no backend. Falhas retornam `error { message: 'invalid_payload' | 'invalid_json' }` e são registradas em log estruturado.
+All WebSocket payloads are validated with **Zod** on the backend. Invalid payloads produce `error { message: 'invalid_payload' | 'invalid_json' }` and are logged.
 
-## 🧪 Testes & Qualidade
+## 🧪 Tests & Quality
 
-Rodar toda a suíte (backend + frontend):
+Run the suites (backend + frontend):
 
 ```
 cd backend && npm test
 cd ../frontend && npm test
 ```
 
-Cobertura dos testes inclui:
-- Backend (Vitest): validação de payloads, aprovação negada/aprovada, erro da tool, auto-resposta para tool inválida.
-- Frontend (Vitest + RTL): interação do modal de aprovação e tratamento de mensagens de erro.
+Coverage highlights:
+- Backend (Vitest): payload validation, approved/denied tool flow, tool error, auto‑resume on invalid tool input.
+- Frontend (Vitest + RTL): approval modal interactions and error handling.
 
-## 🔍 Observabilidade
-- Logs estruturados (`logger.ts`) com nível (`info|warn|error`), carimbo ISO e contexto (ex.: `session_id`, `tool_use_id`).
-- Métricas em memória expostas em `GET /metrics` (formato Prometheus) — inclui contadores para conexões WebSocket, requisições Anthropic, aprovações de tool e durações médias de streaming/continuação.
-- Endpoint `GET /health` segue disponível.
-- Erros críticos propagados ao frontend com mensagens amigáveis e estado visual (badges/alertas) para reconexão, busy e falhas de tool.
+## 🔍 Observability
+- Structured logs (`logger.ts`) with level (`info|warn|error`), ISO timestamp, and context (e.g., `session_id`, `tool_use_id`).
+- In‑memory metrics exposed via `GET /metrics` (Prometheus format) — counters for WebSocket connections, Anthropic requests, tool approvals, and average streaming/resume durations.
+- `GET /health` endpoint is available.
+- Critical errors are surfaced to the UI with friendly messages and visual state (badges/alerts) for reconnect/busy/tool failures.
 
-## 🧪 Requisitos e Garantias
-- ✅ Sem mocks: uso da API oficial Anthropic com SSE
-- ✅ Streaming real-time fim-a-fim (IA e MCP)
-- ✅ Código modular (services, utils, componentes)
-- ✅ Logs/estados do fluxo via `status_update`
+## 🧩 Requirements & Guarantees
+- ✅ No mocks: uses the official Anthropic API with SSE
+- ✅ End‑to‑end real‑time streaming (AI and MCP)
+- ✅ Modular code (services, utils, components)
+- ✅ Flow states via `status_update`
 
-## 🧰 Exemplos úteis
-- Peça à IA: “Crie um arquivo `notas/hello.txt` com o conteúdo: Olá mundo”.
-  - O frontend exibirá um modal de aprovação com o input da tool.
-  - Ao aprovar, você verá `tool_chunk` com o conteúdo sendo gravado em partes.
-  - O arquivo será criado em `WORKSPACE_DIR/notas/hello.txt`.
+## 🧰 Handy Examples
+- Ask the AI: “Create a file `notes/hello.txt` with content: Hello world”.
+  - The frontend will show an approval modal with the tool input.
+  - On approval, you’ll see `tool_chunk` as content is written.
+  - The file is created at `WORKSPACE_DIR/notes/hello.txt`.
 
-## 🛡️ Segurança & Restrições
-- A tool usa `safe_join` para prevenir path traversal; somente grava dentro de `WORKSPACE_DIR`.
-- `WS_ALLOWED_ORIGINS` controla quais origens podem conectar via WebSocket.
+## 🛡️ Security & Restrictions
+- The tool uses `safe_join` to prevent path traversal; it only writes inside `WORKSPACE_DIR`.
+- `WS_ALLOWED_ORIGINS` controls which origins can connect via WebSocket.
 
-## 🧯 Solução de Problemas
-- Mensagens de erro mapeadas do backend (exibidas no frontend):
-  - `ai_saldo_insuficiente`: crédito insuficiente na Anthropic.
-  - `ai_nao_autorizado`: verifique `ANTHROPIC_API_KEY`.
-  - `ai_limite_excedido`: rate limit; aguarde e tente novamente.
-  - `ai_indisponivel`: erro 5xx; tente novamente.
-  - `ai_error`: erro genérico; ver detalhes no log.
-- Erros da tool:
-  - `invalid_path`: caminho fora do `WORKSPACE_DIR`.
-  - `write_failed` / `tool_error`: verifique permissões e disco.
+## 🧯 Troubleshooting
+- Backend emits localized (pt‑BR) messages for AI errors. Common cases:
+  - “Saldo insuficiente para usar a API da Anthropic…” → Low balance/Plans & Billing.
+  - “Não autorizado. Verifique sua ANTHROPIC_API_KEY.” → Invalid/missing key.
+  - “Limite de uso excedido. Aguarde e tente novamente.” → Rate limit exceeded.
+  - “Serviço da IA indisponível no momento…” → 5xx from provider.
+- Tool errors:
+  - `invalid_path`: path outside `WORKSPACE_DIR`.
+  - `write_failed` / `tool_error`: check permissions and disk space.
 
-## 📚 Referências
-- 📖 Anthropic: https://docs.anthropic.com/en/docs/get-started
-- ☁️ Bedrock: https://docs.anthropic.com/en/docs/claude-code/amazon-bedrock
-- 🧩 Tool Use: https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages-tool-use.html
+## 📚 References
+- Anthropic: https://docs.anthropic.com/en/docs/get-started
+- Bedrock: https://docs.anthropic.com/en/docs/claude-code/amazon-bedrock
+- Tool Use: https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages-tool-use.html
